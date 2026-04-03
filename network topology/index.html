@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NetTopoSim — Advanced Network Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f4f0;
+  --white: #ffffff;
+  --border: #e4e2dc;
+  --text: #1a1917;
+  --muted: #8a8780;
+  --accent: #2563eb;
+  --accent-light: #eff4ff;
+  --green: #16a34a;
+  --green-light: #f0fdf4;
+  --amber: #d97706;
+  --amber-light: #fffbeb;
+  --purple: #7c3aed;
+  --purple-light: #ede9fe;
+  --red: #dc2626;
+  --shadow: 0 4px 16px rgba(0,0,0,0.07);
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.hero {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 32px 24px 24px;
+  text-align: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid #bfcffe;
+  border-radius: 99px;
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+h1 span { color: var(--accent); }
+
+.controls-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin: 24px auto 20px;
+  flex-wrap: wrap;
+  background: var(--white);
+  padding: 8px 24px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  width: fit-content;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg);
+  padding: 6px 20px;
+  border-radius: 99px;
+}
+
+.speed-control label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+
+.speed-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.speed-control input {
+  width: 180px;
+  height: 4px;
+  -webkit-appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.speed-control input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.1s;
+}
+
+.speed-control input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.speed-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 4px 10px;
+  border-radius: 99px;
+  min-width: 55px;
+  text-align: center;
+}
+
+.speed-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.speed-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--muted);
+}
+
+.speed-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.device-selector {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 20px 0 16px;
+  flex-wrap: wrap;
+}
+
+.device-type-btn {
+  background: var(--white);
+  border: 2px solid var(--border);
+  border-radius: 99px;
+  padding: 8px 24px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text);
+}
+.device-type-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.device-type-btn.hub-btn.active { background: var(--amber); border-color: var(--amber); }
+.device-type-btn.switch-btn.active { background: var(--green); border-color: var(--green); }
+.device-type-btn.router-btn.active { background: var(--purple); border-color: var(--purple); }
+
+.topology-selector {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.topo-btn {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  padding: 8px 18px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--muted);
+}
+.topo-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+.content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+
+.viz-panel {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+
+.viz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.simulate-btn {
+  background: linear-gradient(135deg, var(--accent), #1d4ed8);
+  border: none;
+  padding: 12px 28px;
+  border-radius: 40px;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+  letter-spacing: 0.02em;
+}
+.simulate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(37,99,235,0.3); }
+
+.topology-canvas {
+  background: linear-gradient(135deg, #faf9f6 0%, #f5f4f0 100%);
+  border-radius: var(--radius-sm);
+  min-height: 500px;
+  position: relative;
+  overflow: visible;
+}
+
+.packet-particle {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle at 30% 30%, #fbbf24, #f59e0b);
+  border-radius: 50%;
+  box-shadow: 0 0 12px #f59e0b;
+  z-index: 1000;
+  pointer-events: none;
+  transition: all 0.02s linear;
+}
+
+.node-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 3px solid;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+
+.node-circle.hub { background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: var(--amber); }
+.node-circle.switch { background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-color: var(--green); }
+.node-circle.router { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); border-color: var(--purple); }
+.node-circle.device { background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-color: var(--accent); }
+
+.node-circle.highlight-receive {
+  animation: receivePulse 0.5s ease-in-out 2;
+  box-shadow: 0 0 0 4px #16a34a;
+}
+.node-circle.highlight-broadcast {
+  animation: broadcastPulse 0.4s ease-in-out 3;
+  box-shadow: 0 0 0 4px #f59e0b;
+}
+@keyframes receivePulse {
+  0% { box-shadow: 0 0 0 0 rgba(22,163,74,0.7); transform: scale(1); }
+  70% { box-shadow: 0 0 0 12px rgba(22,163,74,0); transform: scale(1.05); }
+}
+@keyframes broadcastPulse {
+  0% { box-shadow: 0 0 0 0 rgba(245,158,11,0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(245,158,11,0); }
+}
+
+.node-label {
+  margin-top: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgba(255,255,240,0.9);
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.mac-label, .ip-label {
+  font-size: 0.55rem;
+  font-family: monospace;
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.network-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+  z-index: 10;
+}
+.network-node:hover { transform: scale(1.05); }
+
+.static-line {
+  position: absolute;
+  background: #cbd5e1;
+  height: 2px;
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.packet-log {
+  background: var(--accent-light);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin-top: 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 500;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.detailed-log {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin-top: 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.detailed-log .log-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid #334155;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.detailed-log .log-accept {
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.detailed-log .log-broadcast {
+  color: #fbbf24;
+}
+
+.detailed-log .log-info {
+  color: #60a5fa;
+}
+
+.device-info {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-top: 12px;
+  font-size: 0.7rem;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  background: var(--white);
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-badge">NETWORK SIMULATION LABORATORY</div>
+  <h1>Network <span>Topology</span> Simulator</h1>
+  <p class="hero-desc">Interactive packet transmission with real-time visualization</p>
+  
+  <div class="controls-bar">
+    <div class="speed-control">
+      <label>ANIMATION SPEED</label>
+      <div class="speed-slider-container">
+        <input type="range" id="speedSlider" min="0.3" max="2" step="0.05" value="1">
+        <span class="speed-value" id="speedValue">1.0x</span>
+      </div>
+      <div class="speed-buttons">
+        <button class="speed-btn" data-speed="0.5">0.5x</button>
+        <button class="speed-btn" data-speed="1">1x</button>
+        <button class="speed-btn" data-speed="1.5">1.5x</button>
+        <button class="speed-btn" data-speed="2">2x</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="device-selector">
+    <button class="device-type-btn hub-btn active" data-device="hub">HUB</button>
+    <button class="device-type-btn switch-btn" data-device="switch">SWITCH</button>
+    <button class="device-type-btn router-btn" data-device="router">ROUTER</button>
+  </div>
+  
+  <div class="topology-selector" id="topologySelector">
+    <button class="topo-btn active" data-topology="star">Star</button>
+    <button class="topo-btn" data-topology="tree">Tree</button>
+    <button class="topo-btn" data-topology="ring">Ring</button>
+    <button class="topo-btn" data-topology="mesh">Mesh</button>
+    <button class="topo-btn" data-topology="bus">Bus</button>
+  </div>
+</div>
+
+<div class="content">
+  <div class="viz-panel">
+    <div class="viz-header">
+      <div class="viz-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Network Visualization
+      </div>
+      <button class="simulate-btn" id="simulateBtn">
+        SEND PACKET
+      </button>
+    </div>
+    <div id="topologyCanvas" class="topology-canvas" style="position: relative; min-height: 500px;"></div>
+    <div class="packet-log" id="packetLog">
+      Select source device, then destination device, then click SEND PACKET
+    </div>
+    <div class="detailed-log" id="detailedLog">
+      <div class="log-entry log-info">Simulation log will appear here...</div>
+    </div>
+    <div id="deviceInfo" class="device-info" style="display: none;"></div>
+  </div>
+</div>
+
+<footer>HUB broadcasts to all devices | SWITCH learns MAC addresses | ROUTER performs IP routing | Adjust speed slider to control animation</footer>
+
+<script>
+// Network state
+let currentTopology = "star";
+let currentDeviceType = "hub";
+let nodes = [];
+let sourceNode = null;
+let destNode = null;
+let isAnimating = false;
+let switchMacTable = new Map();
+let animationSpeed = 1.0;
+
+// Speed control
+const speedSlider = document.getElementById('speedSlider');
+const speedValue = document.getElementById('speedValue');
+speedSlider.addEventListener('input', (e) => {
+  animationSpeed = parseFloat(e.target.value);
+  speedValue.textContent = `${animationSpeed.toFixed(2)}x`;
+});
+
+document.querySelectorAll('.speed-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const speed = parseFloat(btn.dataset.speed);
+    animationSpeed = speed;
+    speedSlider.value = speed;
+    speedValue.textContent = `${speed.toFixed(2)}x`;
+  });
+});
+
+// Logging
+function addDetailedLog(message, type = 'info') {
+  const logDiv = document.getElementById('detailedLog');
+  const entry = document.createElement('div');
+  entry.className = `log-entry log-${type}`;
+  const timestamp = new Date().toLocaleTimeString();
+  entry.innerHTML = `[${timestamp}] ${message}`;
+  logDiv.appendChild(entry);
+  entry.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  
+  while (logDiv.children.length > 50) {
+    logDiv.removeChild(logDiv.firstChild);
+  }
+}
+
+function clearDetailedLog() {
+  const logDiv = document.getElementById('detailedLog');
+  logDiv.innerHTML = '<div class="log-entry log-info">Starting new simulation session...</div>';
+}
+
+// Helper functions
+function generateMAC(seed) {
+  return `00:1A:${Math.floor(Math.random()*100).toString().padStart(2,'0')}:${Math.floor(Math.random()*100).toString().padStart(2,'0')}:${seed.toString().padStart(2,'0')}:${Math.floor(Math.random()*100).toString().padStart(2,'0')}`;
+}
+
+function getDeviceMAC(deviceId) {
+  if (!window.deviceMACs) window.deviceMACs = new Map();
+  if (!window.deviceMACs.has(deviceId)) {
+    window.deviceMACs.set(deviceId, generateMAC(deviceId.length + Math.random()*100));
+  }
+  return window.deviceMACs.get(deviceId);
+}
+
+function getDeviceIP(deviceId, idx) {
+  return `192.168.1.${idx + 10}`;
+}
+
+async function animatePacketBetween(container, fromNode, toNode) {
+  return new Promise((resolve) => {
+    const fromRect = fromNode.element.getBoundingClientRect();
+    const toRect = toNode.element.getBoundingClientRect();
+    const canvasRect = container.getBoundingClientRect();
+    
+    const startX = fromRect.left + fromRect.width/2 - canvasRect.left;
+    const startY = fromRect.top + fromRect.height/2 - canvasRect.top;
+    const endX = toRect.left + toRect.width/2 - canvasRect.left;
+    const endY = toRect.top + toRect.height/2 - canvasRect.top;
+    
+    const packet = document.createElement('div');
+    packet.className = 'packet-particle';
+    packet.style.left = `${startX - 9}px`;
+    packet.style.top = `${startY - 9}px`;
+    container.appendChild(packet);
+    
+    const duration = 500 / animationSpeed;
+    const startTime = performance.now();
+    
+    function animate(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / duration);
+      const ease = 1 - Math.pow(1 - t, 2);
+      const currentX = startX + (endX - startX) * ease;
+      const currentY = startY + (endY - startY) * ease;
+      packet.style.left = `${currentX - 9}px`;
+      packet.style.top = `${currentY - 9}px`;
+      
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        packet.remove();
+        resolve();
+      }
+    }
+    requestAnimationFrame(animate);
+  });
+}
+
+async function simulateHub(container, src, dst, topology) {
+  const log = document.getElementById('packetLog');
+  const allDevices = nodes.filter(n => n.type === 'device');
+  
+  addDetailedLog(`HUB MODE: Starting transmission from ${src.label} to ${dst.label}`, 'info');
+  log.innerHTML = `HUB MODE: Broadcasting from ${src.label} to all devices...`;
+  
+  if (topology === 'star' || topology === 'tree') {
+    const central = nodes.find(n => n.type === 'central');
+    addDetailedLog(`${src.label} → ${central.label} (Central Device)`, 'info');
+    await animatePacketBetween(container, src, central);
+    central.element.querySelector('.node-circle').classList.add('highlight-broadcast');
+    setTimeout(() => central.element.querySelector('.node-circle').classList.remove('highlight-broadcast'), 300);
+    
+    addDetailedLog(`${central.label} broadcasting to all connected devices...`, 'broadcast');
+    
+    for (const device of allDevices.filter(d => d.id !== src.id)) {
+      await animatePacketBetween(container, central, device);
+      if (device.id === dst.id) {
+        device.element.querySelector('.node-circle').classList.add('highlight-receive');
+        addDetailedLog(`${device.label} ACCEPTED the packet (Destination match)`, 'accept');
+        log.innerHTML = `${dst.label} ACCEPTED packet! (Destination match)`;
+      } else {
+        device.element.querySelector('.node-circle').classList.add('highlight-broadcast');
+        addDetailedLog(`${device.label}: Received but discarded (Not destination)`, 'broadcast');
+        setTimeout(() => device.element.querySelector('.node-circle').classList.remove('highlight-broadcast'), 300);
+      }
+      await new Promise(r => setTimeout(r, 100 / animationSpeed));
+    }
+  } 
+  else if (topology === 'ring') {
+    addDetailedLog(`RING: Packet traveling around the ring...`, 'info');
+    const nodeList = [...nodes];
+    const srcIdx = nodeList.findIndex(n => n.id === src.id);
+    const dstIdx = nodeList.findIndex(n => n.id === dst.id);
+    
+    for (let i = srcIdx; i !== dstIdx; i = (i + 1) % nodeList.length) {
+      const current = nodeList[i];
+      const next = nodeList[(i + 1) % nodeList.length];
+      await animatePacketBetween(container, current, next);
+      addDetailedLog(`Packet passing through ${next.label}`, 'info');
+      if (next.id === dst.id) {
+        next.element.querySelector('.node-circle').classList.add('highlight-receive');
+        addDetailedLog(`${next.label} ACCEPTED the packet!`, 'accept');
+      } else if (next.id !== src.id) {
+        next.element.querySelector('.node-circle').classList.add('highlight-broadcast');
+        addDetailedLog(`${next.label}: Forwarding packet (not destination)`, 'broadcast');
+        setTimeout(() => next.element.querySelector('.node-circle').classList.remove('highlight-broadcast'), 200);
+      }
+      await new Promise(r => setTimeout(r, 100 / animationSpeed));
+    }
+  }
+  else if (topology === 'mesh') {
+    addDetailedLog(`MESH: Direct connection between devices`, 'info');
+    await animatePacketBetween(container, src, dst);
+    dst.element.querySelector('.node-circle').classList.add('highlight-receive');
+    addDetailedLog(`${dst.label} ACCEPTED the packet via direct mesh link!`, 'accept');
+  }
+  else if (topology === 'bus') {
+    addDetailedLog(`BUS: Packet traveling along backbone...`, 'info');
+    const devices = allDevices.sort((a,b) => parseFloat(a.x) - parseFloat(b.x));
+    const srcIdx = devices.findIndex(d => d.id === src.id);
+    const dstIdx = devices.findIndex(d => d.id === dst.id);
+    const direction = srcIdx < dstIdx ? 1 : -1;
+    
+    for (let i = srcIdx; i !== dstIdx + direction; i += direction) {
+      if (i !== srcIdx && devices[i]) {
+        const prev = devices[Math.max(0, i-direction)];
+        const curr = devices[i];
+        await animatePacketBetween(container, prev, curr);
+        if (curr.id === dst.id) {
+          curr.element.querySelector('.node-circle').classList.add('highlight-receive');
+          addDetailedLog(`${curr.label} ACCEPTED the packet!`, 'accept');
+        } else {
+          curr.element.querySelector('.node-circle').classList.add('highlight-broadcast');
+          addDetailedLog(`${curr.label}: Signal passes through (not destination)`, 'broadcast');
+          setTimeout(() => curr.element.querySelector('.node-circle').classList.remove('highlight-broadcast'), 200);
+        }
+        await new Promise(r => setTimeout(r, 100 / animationSpeed));
+      }
+    }
+  }
+  
+  addDetailedLog(`Transmission complete! Packet delivered to ${dst.label}`, 'accept');
+  setTimeout(() => dst.element.querySelector('.node-circle')?.classList.remove('highlight-receive'), 500);
+  return true;
+}
+
+async function simulateSwitch(container, src, dst, topology) {
+  const srcMAC = getDeviceMAC(src.id);
+  const dstMAC = getDeviceMAC(dst.id);
+  const allDevices = nodes.filter(n => n.type === 'device');
+  
+  addDetailedLog(`SWITCH MODE: ${src.label} (${srcMAC.slice(-8)}) → ${dst.label} (${dstMAC.slice(-8)})`, 'info');
+  
+  if (!switchMacTable.has(srcMAC)) {
+    switchMacTable.set(srcMAC, src.id);
+    addDetailedLog(`Switch learned MAC ${srcMAC.slice(-8)} on port → ${src.label}`, 'info');
+    updateDeviceInfo();
+  }
+  
+  if (topology === 'star' || topology === 'tree') {
+    const central = nodes.find(n => n.type === 'central');
+    await animatePacketBetween(container, src, central);
+    central.element.querySelector('.node-circle').classList.add('highlight-receive');
+    setTimeout(() => central.element.querySelector('.node-circle').classList.remove('highlight-receive'), 300);
+    
+    if (switchMacTable.has(dstMAC) && switchMacTable.get(dstMAC) === dst.id) {
+      addDetailedLog(`Switch found ${dst.label} in MAC table → forwarding directly`, 'accept');
+      await animatePacketBetween(container, central, dst);
+      dst.element.querySelector('.node-circle').classList.add('highlight-receive');
+      addDetailedLog(`${dst.label} ACCEPTED the packet (Unicast forwarding)!`, 'accept');
+    } else {
+      addDetailedLog(`MAC unknown → Flooding to all ports (learning mode)`, 'broadcast');
+      for (const device of allDevices.filter(d => d.id !== src.id)) {
+        await animatePacketBetween(container, central, device);
+        if (device.id === dst.id) {
+          switchMacTable.set(dstMAC, dst.id);
+          device.element.querySelector('.node-circle').classList.add('highlight-receive');
+          addDetailedLog(`${device.label} ACCEPTED packet! MAC address learned.`, 'accept');
+          updateDeviceInfo();
+        } else {
+          device.element.querySelector('.node-circle').classList.add('highlight-broadcast');
+          addDetailedLog(`${device.label}: Received but discarded (not destination)`, 'broadcast');
+          setTimeout(() => device.element.querySelector('.node-circle').classList.remove('highlight-broadcast'), 200);
+        }
+        await new Promise(r => setTimeout(r, 100 / animationSpeed));
+      }
+    }
+  }
+  else {
+    await animatePacketBetween(container, src, dst);
+    dst.element.querySelector('.node-circle').classList.add('highlight-receive');
+    addDetailedLog(`${dst.label} ACCEPTED the packet!`, 'accept');
+  }
+  
+  setTimeout(() => dst.element.querySelector('.node-circle')?.classList.remove('highlight-receive'), 500);
+  return true;
+}
+
+async function simulateRouter(container, src, dst, topology) {
+  const srcIP = getDeviceIP(src.id, parseInt(src.id.match(/\d+/)?.[0] || 1));
+  const dstIP = getDeviceIP(dst.id, parseInt(dst.id.match(/\d+/)?.[0] || 2));
+  
+  addDetailedLog(`ROUTER MODE: Routing packet ${srcIP} → ${dstIP}`, 'info');
+  
+  if (topology === 'star' || topology === 'tree') {
+    const central = nodes.find(n => n.type === 'central');
+    await animatePacketBetween(container, src, central);
+    central.element.querySelector('.node-circle').classList.add('highlight-receive');
+    setTimeout(() => central.element.querySelector('.node-circle').classList.remove('highlight-receive'), 300);
+    addDetailedLog(`Router checking routing table... Destination ${dstIP} reachable`, 'info');
+    await animatePacketBetween(container, central, dst);
+  } else {
+    await animatePacketBetween(container, src, dst);
+  }
+  
+  dst.element.querySelector('.node-circle').classList.add('highlight-receive');
+  addDetailedLog(`${dst.label} ACCEPTED the packet via IP routing!`, 'accept');
+  setTimeout(() => dst.element.querySelector('.node-circle').classList.remove('highlight-receive'), 500);
+  return true;
+}
+
+async function sendPacket() {
+  if (isAnimating) {
+    addDetailedLog(`Packet already in transit, please wait...`, 'info');
+    return;
+  }
+  
+  const devices = nodes.filter(n => n.type === 'device');
+  
+  if (!sourceNode || !destNode) {
+    if (devices.length >= 2) {
+      sourceNode = devices[0];
+      destNode = devices[1];
+      addDetailedLog(`Using default: ${sourceNode.label} → ${destNode.label}`, 'info');
+    } else {
+      addDetailedLog(`Please select source and destination devices!`, 'info');
+      return;
+    }
+  }
+  
+  if (sourceNode.id === destNode.id) {
+    addDetailedLog(`Source and destination cannot be the same device!`, 'info');
+    return;
+  }
+  
+  isAnimating = true;
+  
+  try {
+    if (currentDeviceType === 'hub') {
+      await simulateHub(document.getElementById('topologyCanvas'), sourceNode, destNode, currentTopology);
+    } else if (currentDeviceType === 'switch') {
+      await simulateSwitch(document.getElementById('topologyCanvas'), sourceNode, destNode, currentTopology);
+    } else {
+      await simulateRouter(document.getElementById('topologyCanvas'), sourceNode, destNode, currentTopology);
+    }
+  } catch (e) {
+    console.error(e);
+    addDetailedLog(`Simulation error: ${e.message}`, 'info');
+  }
+  
+  isAnimating = false;
+}
+
+function updateDeviceInfo() {
+  const infoDiv = document.getElementById('deviceInfo');
+  if (currentDeviceType === 'switch') {
+    infoDiv.style.display = 'block';
+    let html = '<strong>Switch MAC Address Table</strong><br>';
+    if (switchMacTable.size === 0) {
+      html += '<span style="color: gray;">Empty (learning in progress...)</span>';
+    } else {
+      for (let [mac, deviceId] of switchMacTable.entries()) {
+        const device = nodes.find(n => n.id === deviceId);
+        html += `<span style="font-family: monospace;">${mac} → ${device?.label || deviceId}</span><br>`;
+      }
+    }
+    infoDiv.innerHTML = html;
+  } else if (currentDeviceType === 'router') {
+    infoDiv.style.display = 'block';
+    infoDiv.innerHTML = '<strong>Router Routing Table</strong><br><span style="font-family: monospace;">192.168.1.0/24 → Local Network<br>Default gateway active</span>';
+  } else {
+    infoDiv.style.display = 'none';
+  }
+}
+
+// Drawing functions
+function drawLine(container, node1, node2, color = '#cbd5e1') {
+  const rect1 = node1.element.getBoundingClientRect();
+  const rect2 = node2.element.getBoundingClientRect();
+  const canvasRect = container.getBoundingClientRect();
+  
+  const x1 = rect1.left + rect1.width/2 - canvasRect.left;
+  const y1 = rect1.top + rect1.height/2 - canvasRect.top;
+  const x2 = rect2.left + rect2.width/2 - canvasRect.left;
+  const y2 = rect2.top + rect2.height/2 - canvasRect.top;
+  
+  const length = Math.hypot(x2 - x1, y2 - y1);
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  
+  const line = document.createElement('div');
+  line.className = 'static-line';
+  line.style.left = `${x1}px`;
+  line.style.top = `${y1}px`;
+  line.style.width = `${length}px`;
+  line.style.backgroundColor = color;
+  line.style.transform = `rotate(${angle}rad)`;
+  container.appendChild(line);
+}
+
+function createNode(container, id, label, type, leftPct, topPct) {
+  const nodeDiv = document.createElement('div');
+  nodeDiv.className = 'network-node';
+  nodeDiv.style.left = `${leftPct}%`;
+  nodeDiv.style.top = `${topPct}%`;
+  nodeDiv.style.transform = 'translate(-50%, -50%)';
+  
+  const circleDiv = document.createElement('div');
+  let circleClass = 'node-circle';
+  if (type === 'central') circleClass += ` ${currentDeviceType}`;
+  else if (type === 'device') circleClass += ' device';
+  circleDiv.className = circleClass;
+  
+  if (type === 'central') {
+    if (currentDeviceType === 'hub') circleDiv.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2v20"/></svg>`;
+    else if (currentDeviceType === 'switch') circleDiv.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`;
+    else circleDiv.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="1.5"><path d="M2 12h20M12 2v20M4 4l16 16M20 4L4 20"/></svg>`;
+  } else {
+    circleDiv.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/></svg>`;
+  }
+  
+  const labelSpan = document.createElement('div');
+  labelSpan.className = 'node-label';
+  labelSpan.textContent = label;
+  
+  nodeDiv.appendChild(circleDiv);
+  nodeDiv.appendChild(labelSpan);
+  
+  if (type === 'device') {
+    const macSpan = document.createElement('div');
+    macSpan.className = 'mac-label';
+    macSpan.textContent = `MAC: ${getDeviceMAC(id).slice(-8)}`;
+    nodeDiv.appendChild(macSpan);
+    
+    const idx = parseInt(id.match(/\d+/)?.[0] || 1);
+    const ipSpan = document.createElement('div');
+    ipSpan.className = 'ip-label';
+    ipSpan.textContent = `IP: 192.168.1.${idx + 9}`;
+    nodeDiv.appendChild(ipSpan);
+  }
+  
+  nodeDiv.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isAnimating) return;
+    if (!sourceNode) {
+      sourceNode = nodes.find(n => n.id === id);
+      addDetailedLog(`Source selected: ${label}`, 'info');
+    } else if (!destNode && sourceNode.id !== id) {
+      destNode = nodes.find(n => n.id === id);
+      addDetailedLog(`Destination selected: ${label}. Ready to send.`, 'info');
+    } else {
+      sourceNode = nodes.find(n => n.id === id);
+      destNode = null;
+      addDetailedLog(`Source reset to: ${label}. Select destination.`, 'info');
+    }
+  });
+  
+  container.appendChild(nodeDiv);
+  nodes.push({ id, label, type, element: nodeDiv, x: leftPct, y: topPct });
+  return nodeDiv;
+}
+
+function clearCanvas(container) {
+  container.innerHTML = '';
+  nodes = [];
+  sourceNode = null;
+  destNode = null;
+}
+
+function renderStar(container) {
+  clearCanvas(container);
+  createNode(container, "central", currentDeviceType === 'hub' ? "HUB" : (currentDeviceType === 'switch' ? "SWITCH" : "ROUTER"), "central", 50, 50);
+  const positions = [[50, 18], [78, 32], [78, 68], [50, 82], [22, 68], [22, 32]];
+  for (let i = 0; i < 6; i++) {
+    createNode(container, `pc${i+1}`, `PC ${i+1}`, "device", positions[i][0], positions[i][1]);
+  }
+  setTimeout(() => {
+    const central = nodes.find(n => n.type === 'central');
+    const devices = nodes.filter(n => n.type === 'device');
+    devices.forEach(device => drawLine(container, central, device));
+  }, 50);
+}
+
+function renderTree(container) {
+  clearCanvas(container);
+  createNode(container, "central", currentDeviceType === 'hub' ? "HUB" : (currentDeviceType === 'switch' ? "SWITCH" : "ROUTER"), "central", 50, 15);
+  createNode(container, "switch1", "Switch A", "device", 25, 45);
+  createNode(container, "switch2", "Switch B", "device", 75, 45);
+  createNode(container, "pc1", "PC 1", "device", 15, 78);
+  createNode(container, "pc2", "PC 2", "device", 35, 78);
+  createNode(container, "pc3", "PC 3", "device", 65, 78);
+  createNode(container, "pc4", "PC 4", "device", 85, 78);
+  setTimeout(() => {
+    const central = nodes.find(n => n.type === 'central');
+    const s1 = nodes.find(n => n.id === 'switch1');
+    const s2 = nodes.find(n => n.id === 'switch2');
+    const devices = nodes.filter(n => n.id.startsWith('pc'));
+    if (central && s1) drawLine(container, central, s1);
+    if (central && s2) drawLine(container, central, s2);
+    devices.forEach(device => {
+      if (device.x < 50) drawLine(container, s1, device);
+      else drawLine(container, s2, device);
+    });
+  }, 50);
+}
+
+function renderRing(container) {
+  clearCanvas(container);
+  const angles = [0, 72, 144, 216, 288];
+  for (let i = 0; i < 5; i++) {
+    const rad = (angles[i] - 90) * Math.PI / 180;
+    const x = 50 + 35 * Math.cos(rad);
+    const y = 50 + 35 * Math.sin(rad);
+    createNode(container, `ring${i+1}`, `Node ${i+1}`, "device", x, y);
+  }
+  setTimeout(() => {
+    for (let i = 0; i < nodes.length; i++) {
+      const next = nodes[(i + 1) % nodes.length];
+      drawLine(container, nodes[i], next, '#f59e0b');
+    }
+  }, 50);
+}
+
+function renderMesh(container) {
+  clearCanvas(container);
+  const positions = [[20, 20], [80, 20], [80, 80], [20, 80], [50, 50]];
+  for (let i = 0; i < 5; i++) {
+    createNode(container, `mesh${i+1}`, `Device ${i+1}`, "device", positions[i][0], positions[i][1]);
+  }
+  setTimeout(() => {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        drawLine(container, nodes[i], nodes[j], '#8b5cf6');
+      }
+    }
+  }, 50);
+}
+
+function renderBus(container) {
+  clearCanvas(container);
+  const backbone = document.createElement('div');
+  backbone.style.position = 'absolute';
+  backbone.style.left = '10%';
+  backbone.style.width = '80%';
+  backbone.style.height = '4px';
+  backbone.style.background = 'linear-gradient(90deg, #2563eb, #16a34a)';
+  backbone.style.top = '50%';
+  backbone.style.transform = 'translateY(-50%)';
+  backbone.style.borderRadius = '2px';
+  backbone.style.zIndex = '1';
+  container.appendChild(backbone);
+  
+  for (let i = 0; i < 5; i++) {
+    const x = 15 + i * 17.5;
+    createNode(container, `buspc${i+1}`, `PC ${i+1}`, "device", x, 58);
+    const drop = document.createElement('div');
+    drop.style.position = 'absolute';
+    drop.style.left = `${x}%`;
+    drop.style.top = `50%`;
+    drop.style.width = '3px';
+    drop.style.height = '35px';
+    drop.style.background = '#cbd5e1';
+    drop.style.transform = 'translate(-50%, -100%)';
+    drop.style.zIndex = '1';
+    container.appendChild(drop);
+  }
+}
+
+function switchTopology(topology) {
+  currentTopology = topology;
+  const canvas = document.getElementById('topologyCanvas');
+  switch(topology) {
+    case 'star': renderStar(canvas); break;
+    case 'tree': renderTree(canvas); break;
+    case 'ring': renderRing(canvas); break;
+    case 'mesh': renderMesh(canvas); break;
+    case 'bus': renderBus(canvas); break;
+  }
+  sourceNode = null;
+  destNode = null;
+  clearDetailedLog();
+  addDetailedLog(`Switched to ${topology.toUpperCase()} topology with ${currentDeviceType.toUpperCase()}`, 'info');
+}
+
+function switchDeviceType(type) {
+  currentDeviceType = type;
+  switchMacTable.clear();
+  
+  document.querySelectorAll('.device-type-btn').forEach(btn => btn.classList.remove('active'));
+  if (type === 'hub') document.querySelector('.hub-btn').classList.add('active');
+  else if (type === 'switch') document.querySelector('.switch-btn').classList.add('active');
+  else document.querySelector('.router-btn').classList.add('active');
+  
+  switchTopology(currentTopology);
+  updateDeviceInfo();
+}
+
+// Event listeners
+document.querySelectorAll('.topo-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.topo-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    switchTopology(btn.dataset.topology);
+  });
+});
+
+document.querySelectorAll('.device-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchDeviceType(btn.dataset.device));
+});
+
+document.getElementById('simulateBtn').addEventListener('click', sendPacket);
+
+// Initialize
+switchDeviceType('hub');
+</script>
+</body>
+</html>

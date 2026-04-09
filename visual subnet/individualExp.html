@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCP Virtual Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2128;
+  --surface3: #21262d;
+  --border: #30363d;
+  --border2: #444c56;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --blue: #388bfd;
+  --blue-dim: #1f3a5f;
+  --green: #3fb950;
+  --green-dim: #1a3a22;
+  --red: #f85149;
+  --red-dim: #3d1a1a;
+  --amber: #e3b341;
+  --amber-dim: #3a2c00;
+  --purple: #bc8cff;
+  --purple-dim: #2d1e4a;
+  --font-ui: 'Syne', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.lab {
+  max-width: 1300px;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+/* Header */
+.lab-header {
+  background: #0d1117;
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lab-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lab-icon {
+  width: 32px; height: 32px;
+  background: var(--blue);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.lab-icon svg { width: 18px; height: 18px; fill: #fff; }
+.lab-title { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.lab-subtitle { font-size: 11px; color: var(--muted); font-family: var(--font-mono); margin-top: 1px; }
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+/* Mode Tabs */
+.mode-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  overflow-x: auto;
+}
+.mode-tab {
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  color: var(--muted);
+  white-space: nowrap;
+  letter-spacing: .02em;
+  transition: color .15s;
+}
+.mode-tab:hover { color: var(--text); }
+.mode-tab.active {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+}
+
+/* Body Layout */
+.lab-body {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  min-height: 540px;
+}
+
+/* Main panel */
+.lab-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-right: 1px solid var(--border);
+}
+
+/* Controls */
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--surface3);
+  color: var(--text);
+  cursor: pointer;
+  letter-spacing: .02em;
+  transition: all .15s;
+}
+.btn:hover { background: #2d333b; border-color: #6e7681; }
+.btn:active { transform: scale(.97); }
+.btn-blue { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn-blue:hover { background: #1f6feb; border-color: #1f6feb; }
+.btn-red { background: var(--red); border-color: var(--red); color: #fff; }
+.btn-red:hover { background: #da3633; }
+.btn-green { background: var(--green); border-color: var(--green); color: #fff; }
+.btn-green:hover { background: #2ea043; }
+.btn:disabled { opacity: .3; cursor: not-allowed; transform: none !important; }
+
+/* Speed slider */
+.speed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+.speed-row input[type=range] {
+  width: 80px;
+  accent-color: var(--blue);
+}
+
+/* Status */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+.sdot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background .3s, box-shadow .3s;
+}
+.sdot-idle { background: var(--muted); }
+.sdot-run { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.sdot-warn { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.sdot-err { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+/* Canvas */
+.canvas-wrap {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  min-height: 300px;
+}
+#mainCanvas { display: block; width: 100%; height: 100%; }
+
+/* Packet grid */
+.pkt-grid-wrap { overflow-x: auto; margin-top: 4px; }
+table.pgrid {
+  border-collapse: collapse;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  width: 100%;
+}
+table.pgrid th, table.pgrid td {
+  border: 1px solid var(--border);
+  padding: 5px 7px;
+  text-align: center;
+  white-space: nowrap;
+}
+table.pgrid th { background: var(--surface2); color: var(--muted); font-weight: 500; }
+.pcell-win { background: var(--blue-dim); color: #7db8ff; font-weight: 600; }
+.pcell-ack { background: var(--green-dim); color: #7ee787; font-weight: 600; }
+.pcell-lost { background: var(--red-dim); color: #ff7b72; font-weight: 600; }
+.pcell-idle { background: var(--surface2); color: var(--muted); }
+
+/* GBN window viz */
+.win-viz {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  padding: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  align-items: center;
+}
+.win-cell {
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  transition: all .2s;
+}
+.win-cell-active { background: var(--blue-dim); border-color: var(--blue); color: #7db8ff; }
+.win-cell-acked { background: var(--green-dim); border-color: var(--green); color: #7ee787; }
+.win-cell-lost { background: var(--red-dim); border-color: var(--red); color: #ff7b72; animation: pulse-red .6s infinite alternate; }
+.win-cell-idle { background: var(--surface2); color: var(--muted); }
+
+@keyframes pulse-red { from { box-shadow: none; } to { box-shadow: 0 0 6px var(--red); } }
+
+/* Side panel */
+.lab-side {
+  display: flex;
+  flex-direction: column;
+}
+.log-header {
+  padding: 9px 12px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.log-header-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: blink 1.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.log-body {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 420px;
+  padding: 0;
+}
+.log-body::-webkit-scrollbar { width: 4px; }
+.log-body::-webkit-scrollbar-track { background: var(--surface); }
+.log-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.log-entry {
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  align-items: flex-start;
+  animation: slideIn .2s ease;
+}
+@keyframes slideIn { from { opacity:0; transform: translateX(8px); } to { opacity:1; transform: none; } }
+.log-entry:last-child { border-bottom: none; }
+.ldot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.ldot-s { background: var(--blue); }
+.ldot-r { background: var(--green); }
+.ldot-n { background: var(--muted); }
+.ldot-w { background: var(--red); }
+.ltext { color: var(--muted); }
+.lbold { color: var(--text); font-weight: 600; }
+.log-empty { padding: 30px; text-align: center; color: var(--muted); font-size: 11px; font-family: var(--font-mono); }
+
+/* Stats side */
+.side-stats {
+  border-top: 1px solid var(--border);
+  padding: 10px;
+  background: var(--surface2);
+}
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stat-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+}
+.stat-val { font-size: 18px; font-weight: 700; color: var(--blue); font-family: var(--font-mono); }
+.stat-lbl { font-size: 9px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .06em; }
+
+/* Tooltip on canvas */
+.canvas-legend {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<div class="lab">
+  <!-- Header -->
+  <div class="lab-header">
+    <div class="lab-brand">
+      <div class="lab-icon">
+        <svg viewBox="0 0 20 20"><path d="M2 4h16v2H2zm0 5h16v2H2zm0 5h10v2H2z"/></svg>
+      </div>
+      <div>
+        <div class="lab-title">TCP Virtual Lab</div>
+        <div class="lab-subtitle">Transmission Control Protocol — Interactive Simulator</div>
+      </div>
+    </div>
+    <span class="badge">v2.0 · Educational</span>
+  </div>
+
+  <!-- Mode Tabs -->
+  <div class="mode-tabs" id="modeTabs">
+    <button class="mode-tab active" onclick="switchMode('handshake',this)">3-Way Handshake</button>
+    <button class="mode-tab" onclick="switchMode('stopwait',this)">Stop-and-Wait</button>
+    <button class="mode-tab" onclick="switchMode('gobackn',this)">Go-Back-N</button>
+  </div>
+
+  <!-- Body -->
+  <div class="lab-body">
+    <!-- Main -->
+    <div class="lab-main">
+      <div class="ctrl-row" id="ctrlBar">
+        <!-- filled by JS -->
+      </div>
+      <div class="status-bar">
+        <span class="sdot sdot-idle" id="sdot"></span>
+        <span id="statusTxt" style="color:var(--muted)">Select a mode and press a button to begin</span>
+      </div>
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div class="canvas-legend" id="canvasLegend"></div>
+      </div>
+      <div id="extraArea"></div>
+    </div>
+
+    <!-- Side log -->
+    <div class="lab-side">
+      <div class="log-header">
+        <span class="log-header-dot"></span>
+        Communication Log
+      </div>
+      <div class="log-body" id="logBody">
+        <div class="log-empty">No events yet.<br>Run a simulation.</div>
+      </div>
+      <div class="side-stats" id="sideStats"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+let animId = null, mode = 'handshake', running = false, speed = 1.2;
+let logEntries = [];
+
+// ── Canvas sizing ──────────────────────────────────────────────
+function sizeCanvas() {
+  const w = document.getElementById('canvasWrap');
+  canvas.width = w.clientWidth;
+  canvas.height = Math.max(300, w.clientHeight);
+}
+
+// ── Logging ───────────────────────────────────────────────────
+function log(who, msg, type = 'n') {
+  logEntries.push({ who, msg, type, ts: Date.now() });
+  if (logEntries.length > 80) logEntries.shift();
+  renderLog();
+}
+function renderLog() {
+  const b = document.getElementById('logBody');
+  if (!logEntries.length) { b.innerHTML = '<div class="log-empty">No events yet.</div>'; return; }
+  b.innerHTML = logEntries.map(e => {
+    const dc = e.type === 's' ? 'ldot-s' : e.type === 'r' ? 'ldot-r' : e.type === 'w' ? 'ldot-w' : 'ldot-n';
+    return `<div class="log-entry"><span class="ldot ${dc}"></span><span class="ltext"><span class="lbold">(${e.who}):</span> ${e.msg}</span></div>`;
+  }).join('');
+  b.scrollTop = b.scrollHeight;
+}
+function clearLog() { logEntries = []; renderLog(); }
+
+// ── Status ────────────────────────────────────────────────────
+function setStatus(msg, type = 'idle') {
+  document.getElementById('statusTxt').textContent = msg;
+  const d = document.getElementById('sdot');
+  d.className = 'sdot ' + (type === 'run' ? 'sdot-run' : type === 'warn' ? 'sdot-warn' : type === 'err' ? 'sdot-err' : 'sdot-idle');
+}
+
+// ── Animation helpers ─────────────────────────────────────────
+function stopAnim() { if (animId) { cancelAnimationFrame(animId); animId = null; } running = false; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function easeInOut(t) { return t < .5 ? 2*t*t : -1+(4-2*t)*t; }
+
+// ── Draw helpers ──────────────────────────────────────────────
+const C = {
+  bg: '#0d1117', surface: '#161b22', surface2: '#1c2128', border: '#30363d',
+  text: '#e6edf3', muted: '#8b949e',
+  blue: '#388bfd', green: '#3fb950', red: '#f85149',
+  amber: '#e3b341', purple: '#bc8cff'
+};
+
+function drawBg() {
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // subtle grid
+  ctx.strokeStyle = '#161b22';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvas.width; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+}
+
+function drawNode(x, y, label, col, subLabel) {
+  const w = 90, h = 38, r = 8;
+  // glow
+  ctx.shadowColor = col;
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = col + '22';
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(x - w/2, y - h/2, w, h, r); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = col;
+  ctx.font = '600 13px Syne, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, x, subLabel ? y - 4 : y);
+  if (subLabel) {
+    ctx.fillStyle = C.muted;
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillText(subLabel, x, y + 11);
+  }
+}
+
+function drawTimeline(x, y0, y1, col) {
+  ctx.strokeStyle = col + '44';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawArrowLine(x1, y1, x2, y2, col, label, dashed = false) {
+  ctx.save();
+  ctx.strokeStyle = col;
+  ctx.fillStyle = col;
+  ctx.lineWidth = 1.8;
+  ctx.shadowColor = col;
+  ctx.shadowBlur = 6;
+  if (dashed) ctx.setLineDash([6, 5]);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.setLineDash([]);
+  // Arrowhead
+  const ang = Math.atan2(y2 - y1, x2 - x1);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - 11 * Math.cos(ang - .45), y2 - 11 * Math.sin(ang - .45));
+  ctx.lineTo(x2 - 11 * Math.cos(ang + .45), y2 - 11 * Math.sin(ang + .45));
+  ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0;
+  // Label
+  if (label) {
+    const mx = (x1 + x2) / 2 + (y2 > y1 ? (x2 > x1 ? -6 : 6) : 0);
+    const my = (y1 + y2) / 2;
+    ctx.font = '500 10px JetBrains Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = C.bg;
+    ctx.fillRect(mx - tw/2 - 4, my - 8, tw + 8, 16);
+    ctx.fillStyle = col;
+    ctx.fillText(label, mx, my);
+  }
+  ctx.restore();
+}
+
+function drawPacketBall(x, y, col, label, size = 9) {
+  ctx.save();
+  ctx.shadowColor = col;
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = col;
+  ctx.strokeStyle = C.bg;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, size, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur = 0;
+  if (label) {
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 8px JetBrains Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+  ctx.restore();
+}
+
+function drawTimestampLabel(x, y, label, col) {
+  ctx.save();
+  ctx.font = '9px JetBrains Mono, monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = col + 'aa';
+  ctx.fillText(label, x, y);
+  ctx.restore();
+}
+
+// ── Layout helpers ────────────────────────────────────────────
+function getLayout() {
+  const W = canvas.width, H = canvas.height;
+  return {
+    W, H,
+    sx: W * 0.18,   // sender x
+    rx: W * 0.82,   // receiver x
+    ny: H * 0.10,   // node y
+    tl0: H * 0.10 + 22,  // timeline start
+    tl1: H - 18,         // timeline end
+  };
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODE: 3-WAY HANDSHAKE
+// ════════════════════════════════════════════════════════════════
+const HS_STEPS = [
+  { from:'s', label:'SYN', detail:'seq=0, SYN=1',         col: C.blue,   logWho:'Sender',   logMsg:'SYN sent — initiating connection', logType:'s' },
+  { from:'r', label:'SYN-ACK', detail:'seq=0, ack=1',     col: C.green,  logWho:'Receiver', logMsg:'SYN received. Sending SYN-ACK',    logType:'r' },
+  { from:'s', label:'ACK', detail:'ack=1',                 col: C.blue,   logWho:'Sender',   logMsg:'SYN-ACK received. Sending ACK → Connection ESTABLISHED', logType:'s' },
+  { from:'s', label:'DATA', detail:'seq=1, len=512B',      col: C.purple, logWho:'Sender',   logMsg:'Sending data segment',             logType:'s' },
+  { from:'r', label:'ACK', detail:'ack=513',               col: C.green,  logWho:'Receiver', logMsg:'Data received. Sending ACK',       logType:'r' },
+];
+let hsDone = [], hsIdx = 0;
+const HS_STATUS = [
+  'SYN sent — waiting for SYN-ACK',
+  'SYN-ACK received — sending ACK',
+  'Connection established! ✓',
+  'Data segment in flight…',
+  'Data acknowledged. Session active.',
+];
+
+function initHandshake() {
+  hsDone = []; hsIdx = 0;
+  clearLog();
+  stopAnim();
+  setStatus('Click "Send SYN" to begin the handshake', 'idle');
+  drawHandshake(0, null);
+  setLegend([{col:C.blue,label:'Sender'},{col:C.green,label:'Receiver'},{col:C.purple,label:'Data'}]);
+  setSideStats([]);
+}
+
+function drawHandshake(animT, animIdx) {
+  sizeCanvas();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBg();
+  const { W, H, sx, rx, ny, tl0, tl1 } = getLayout();
+  drawNode(sx, ny, 'SENDER', C.blue, '192.168.1.1');
+  drawNode(rx, ny, 'RECEIVER', C.green, '10.0.0.1');
+  drawTimeline(sx, tl0, tl1, C.blue);
+  drawTimeline(rx, tl0, tl1, C.green);
+
+  const slots = HS_STEPS.length + 1;
+  const slotH = (tl1 - tl0 - 20) / slots;
+
+  hsDone.forEach((s, i) => {
+    const y1 = tl0 + slotH * i + slotH * 0.25;
+    const y2 = tl0 + slotH * i + slotH * 0.75;
+    const fromX = s.from === 's' ? sx : rx;
+    const toX   = s.from === 's' ? rx : sx;
+    drawArrowLine(fromX, y1, toX, y2, s.col, s.label + ' · ' + s.detail);
+    // tick marks on timelines
+    ctx.strokeStyle = s.col + '66'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(fromX-4, y1); ctx.lineTo(fromX+4, y1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX-4, y2); ctx.lineTo(toX+4, y2); ctx.stroke();
+  });
+
+  // Animate current
+  if (animIdx !== null && animIdx < HS_STEPS.length && animT > 0) {
+    const s = HS_STEPS[animIdx];
+    const y1 = tl0 + slotH * animIdx + slotH * 0.25;
+    const y2 = tl0 + slotH * animIdx + slotH * 0.75;
+    const fromX = s.from === 's' ? sx : rx;
+    const toX   = s.from === 's' ? rx : sx;
+    const t = easeInOut(animT);
+    // trail line
+    ctx.strokeStyle = s.col + '44'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(fromX, y1); ctx.lineTo(lerp(fromX, toX, t), lerp(y1, y2, t)); ctx.stroke();
+    drawPacketBall(lerp(fromX, toX, t), lerp(y1, y2, t), s.col, s.label[0]);
+  }
+
+  // "Established" banner
+  if (hsDone.length >= 3) {
+    const bannerY = tl0 + slotH * 3 - 8;
+    ctx.fillStyle = C.green + '15';
+    ctx.strokeStyle = C.green + '44';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(sx + 10, bannerY - 10, rx - sx - 20, 22, 4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.green;
+    ctx.font = '600 10px Syne, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('CONNECTION ESTABLISHED', W / 2, bannerY + 1);
+  }
+}
+
+function runHSStep() {
+  if (hsIdx >= HS_STEPS.length) { setStatus('Handshake complete.', 'run'); return; }
+  stopAnim();
+  running = true;
+  const step = HS_STEPS[hsIdx];
+  let t = 0, start = null;
+  function frame(ts) {
+    if (!start) start = ts;
+    t = Math.min((ts - start) / (700 / speed), 1);
+    drawHandshake(t, hsIdx);
+    if (t < 1) { animId = requestAnimationFrame(frame); }
+    else {
+      hsDone.push(step);
+      log(step.logWho, step.logMsg, step.logType);
+      hsIdx++;
+      setStatus(HS_STATUS[hsIdx - 1], hsIdx >= 3 ? 'run' : 'warn');
+      drawHandshake(0, null);
+      running = false;
+      setSideStats([
+        { val: hsIdx, lbl: 'Steps done' },
+        { val: hsIdx >= 3 ? 'Active' : 'Pending', lbl: 'State' },
+      ]);
+    }
+  }
+  animId = requestAnimationFrame(frame);
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODE: STOP-AND-WAIT
+// ════════════════════════════════════════════════════════════════
+let swSeq = 0, swHistory = [], swTimeout = null;
+
+function initStopWait() {
+  swSeq = 0; swHistory = [];
+  clearLog();
+  stopAnim();
+  setStatus('Press "Send Packet" to transmit one frame', 'idle');
+  drawStopWait();
+  setLegend([{col:C.blue,label:'Packet'},{col:C.green,label:'ACK'},{col:C.red,label:'Lost'}]);
+  setSideStats([{val:0,lbl:'Seq#'},{val:0,lbl:'ACK#'},{val:'1',lbl:'Window'},{val:'0%',lbl:'Loss'}]);
+}
+
+function drawStopWait() {
+  sizeCanvas();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBg();
+  const { W, H, sx, rx, ny, tl0, tl1 } = getLayout();
+  drawNode(sx, ny, 'SENDER', C.blue, 'seq=' + swSeq);
+  drawNode(rx, ny, 'RECEIVER', C.green, 'exp=' + swSeq);
+  drawTimeline(sx, tl0, tl1, C.blue);
+  drawTimeline(rx, tl0, tl1, C.green);
+
+  const maxShow = 6;
+  const history = swHistory.slice(-maxShow);
+  const slotH = (tl1 - tl0) / (maxShow + 1);
+
+  history.forEach((p, i) => {
+    const y0 = tl0 + slotH * i + slotH * 0.1;
+    const ymid = tl0 + slotH * i + slotH * 0.45;
+    const y1 = tl0 + slotH * i + slotH * 0.8;
+    if (p.lost) {
+      drawArrowLine(sx, y0, lerp(sx, rx, 0.42), ymid - 4, C.red, 'PKT ' + p.seq, true);
+      // X mark
+      const mx = lerp(sx, rx, 0.48), my = ymid;
+      ctx.strokeStyle = C.red; ctx.lineWidth = 2; ctx.shadowColor = C.red; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.moveTo(mx - 6, my - 6); ctx.lineTo(mx + 6, my + 6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx + 6, my - 6); ctx.lineTo(mx - 6, my + 6); ctx.stroke();
+      ctx.shadowBlur = 0;
+      // Timeout indicator
+      ctx.fillStyle = C.amber + 'cc';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText('TIMEOUT → retransmit', sx + 6, y1 - 4);
+      // timeout arrow back
+      ctx.strokeStyle = C.amber + '66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(sx, ymid); ctx.lineTo(sx, y1 - 2); ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      drawArrowLine(sx, y0, rx, ymid, C.blue, 'PKT ' + p.seq + '  [seq=' + p.seq + ']');
+      drawArrowLine(rx, ymid, sx, y1, C.green, 'ACK ' + p.seq);
+    }
+  });
+}
+
+function swSend(forceLoss = false) {
+  if (running) return;
+  const lost = forceLoss || false;
+  swHistory.push({ seq: swSeq, lost });
+  if (!lost) {
+    log('Sender', 'Sending PKT ' + swSeq + ' [seq=' + swSeq + ']', 's');
+    log('Receiver', 'PKT ' + swSeq + ' received. Sending ACK ' + swSeq, 'r');
+    log('Sender', 'ACK ' + swSeq + ' received. Window slides.', 's');
+    swSeq++;
+    setStatus('PKT ' + (swSeq-1) + ' acknowledged ✓  Next seq# = ' + swSeq, 'run');
+  } else {
+    log('Sender', 'Sending PKT ' + swSeq + '…', 's');
+    log('Network', 'PKT ' + swSeq + ' LOST in transit', 'w');
+    log('Sender', 'Timeout! Retransmitting PKT ' + swSeq, 'w');
+    setStatus('PKT ' + swSeq + ' lost → timeout → retransmit', 'err');
+  }
+  if (swHistory.length > 12) swHistory.shift();
+  drawStopWait();
+  setSideStats([{val:swSeq,lbl:'Next seq#'},{val:swSeq,lbl:'ACK#'},{val:'1',lbl:'Window'},{val:swHistory.filter(p=>p.lost).length,lbl:'Losses'}]);
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODE: GO-BACK-N
+// ════════════════════════════════════════════════════════════════
+let gbnWinSize = 4, gbnBase = 0, gbnNextSeq = 0, gbnPackets = [];
+
+function initGBN() {
+  gbnBase = 0; gbnNextSeq = 0; gbnPackets = [];
+  clearLog();
+  stopAnim();
+  setStatus('Click "Send Window" to transmit ' + gbnWinSize + ' packets', 'idle');
+  drawGBN();
+  renderGBNGrid();
+  setLegend([{col:C.blue,label:'In-flight'},{col:C.green,label:'ACKed'},{col:C.red,label:'Lost'}]);
+  renderGBNSideStats();
+}
+
+function renderGBNSideStats() {
+  setSideStats([
+    { val: gbnWinSize, lbl: 'Window' },
+    { val: gbnBase, lbl: 'Base' },
+    { val: gbnNextSeq, lbl: 'Next seq' },
+    { val: gbnPackets.filter(p=>p.lost).length, lbl: 'Lost' },
+  ]);
+}
+
+function drawGBN() {
+  sizeCanvas();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBg();
+  const { W, H, sx, rx, ny, tl0, tl1 } = getLayout();
+  drawNode(sx, ny, 'SENDER', C.blue, 'base=' + gbnBase);
+  drawNode(rx, ny, 'RECEIVER', C.green, 'exp=' + gbnBase);
+  drawTimeline(sx, tl0, tl1, C.blue);
+  drawTimeline(rx, tl0, tl1, C.green);
+
+  const maxShow = 7;
+  const show = gbnPackets.slice(-maxShow);
+  const slotH = (tl1 - tl0) / (maxShow + 1);
+
+  show.forEach((p, i) => {
+    const y0 = tl0 + slotH * i + slotH * 0.1;
+    const ymid = tl0 + slotH * i + slotH * 0.5;
+    const y1 = tl0 + slotH * i + slotH * 0.85;
+    const col = p.lost ? C.red : p.acked ? C.green : C.blue;
+    if (p.lost) {
+      drawArrowLine(sx, y0, lerp(sx, rx, 0.4), ymid - 6, C.red, 'P' + p.seq, true);
+      const mx = lerp(sx, rx, 0.45), my = ymid - 6;
+      ctx.strokeStyle = C.red; ctx.lineWidth = 2; ctx.shadowColor = C.red; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.moveTo(mx-5,my-5); ctx.lineTo(mx+5,my+5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx+5,my-5); ctx.lineTo(mx-5,my+5); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = C.red + '88'; ctx.font = '9px JetBrains Mono, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('GBN: retransmit from P' + p.seq, W/2, y1 - 2);
+    } else {
+      drawArrowLine(sx, y0, rx, ymid, col, 'P' + p.seq + (p.inWin?' [win]':''));
+      if (p.acked) drawArrowLine(rx, ymid, sx, y1, C.green, 'ACK' + p.seq);
+    }
+  });
+
+  // Window bracket
+  const winY = ny + 26;
+  ctx.strokeStyle = C.blue + '55'; ctx.lineWidth = 1;
+  ctx.fillStyle = C.blue + '11';
+  const unitW = (rx - sx) / 16;
+  const bx = sx + gbnBase * unitW;
+  const bw = gbnWinSize * unitW;
+  ctx.beginPath(); ctx.roundRect(bx, winY, Math.min(bw, rx - bx), 14, 3); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = C.blue + 'aa'; ctx.font = '9px JetBrains Mono, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('Window [' + gbnBase + '…' + (gbnBase + gbnWinSize - 1) + ']', bx + Math.min(bw, rx-bx)/2, winY + 7);
+}
+
+function renderGBNGrid() {
+  const n = 16;
+  let html = '<div class="win-viz">';
+  html += '<span style="font-size:9px;color:var(--muted);font-family:var(--font-mono);margin-right:4px">Pkt#</span>';
+  for (let i = 0; i < n; i++) {
+    const p = gbnPackets.find(x => x.seq === i);
+    const inWin = i >= gbnBase && i < gbnBase + gbnWinSize;
+    let cls = 'win-cell-idle';
+    let val = i;
+    if (p) {
+      cls = p.lost ? 'win-cell-lost' : p.acked ? 'win-cell-acked' : 'win-cell-active';
+      val = p.lost ? '×' : '✓';
+    } else if (inWin) {
+      cls = 'win-cell-active';
+    }
+    html += `<div class="win-cell ${cls}">${val}</div>`;
+  }
+  html += '</div>';
+  document.getElementById('extraArea').innerHTML = html;
+}
+
+function gbnSendWindow() {
+  if (running) return;
+  const lossIdx = Math.random() < 0.35 ? gbnNextSeq + Math.floor(Math.random() * gbnWinSize) : -1;
+  for (let i = 0; i < gbnWinSize; i++) {
+    const s = gbnNextSeq + i;
+    const lost = (s === lossIdx);
+    gbnPackets.push({ seq: s, lost, acked: false, inWin: true });
+    log('Sender', 'Transmitting P' + s + (lost ? ' ← will be lost' : ''), 's');
+  }
+  const sent = gbnNextSeq;
+  gbnNextSeq += gbnWinSize;
+  setTimeout(() => {
+    let allOk = true;
+    gbnPackets.forEach(p => {
+      if (!p.lost && !p.acked) { p.acked = true; log('Receiver', 'ACK' + p.seq + ' sent', 'r'); }
+      if (p.lost) allOk = false;
+    });
+    if (!allOk) {
+      log('Network', 'Loss detected! Go-Back-N retransmitting from P' + lossIdx, 'w');
+      setStatus('P' + lossIdx + ' lost — retransmitting from P' + lossIdx, 'err');
+    } else {
+      gbnBase = gbnNextSeq;
+      setStatus('Window [' + sent + '…' + (sent + gbnWinSize - 1) + '] fully ACKed ✓', 'run');
+    }
+    drawGBN(); renderGBNGrid(); renderGBNSideStats();
+  }, 500);
+  drawGBN(); renderGBNGrid(); renderGBNSideStats();
+  setStatus('Sending window of ' + gbnWinSize + ' packets…', 'warn');
+}
+
+// ── Legend ─────────────────────────────────────────────────────
+function setLegend(items) {
+  document.getElementById('canvasLegend').innerHTML = items.map(it =>
+    `<div class="legend-item"><span class="legend-dot" style="background:${it.col}"></span>${it.label}</div>`
+  ).join('');
+}
+
+// ── Side stats ─────────────────────────────────────────────────
+function setSideStats(items) {
+  if (!items.length) { document.getElementById('sideStats').innerHTML = ''; return; }
+  document.getElementById('sideStats').innerHTML =
+    '<div class="stat-grid">' +
+    items.map(it => `<div class="stat-box"><div class="stat-val">${it.val}</div><div class="stat-lbl">${it.lbl}</div></div>`).join('') +
+    '</div>';
+}
+
+// ── Mode switcher ──────────────────────────────────────────────
+function switchMode(m, btn) {
+  stopAnim(); mode = m;
+  document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('extraArea').innerHTML = '';
+  document.getElementById('sideStats').innerHTML = '';
+  clearLog();
+
+  const configs = {
+    handshake: {
+      btns: [
+        { l: 'Send SYN →', fn: 'runHSStep()', cls: 'btn-blue' },
+        { l: 'Reset', fn: 'initHandshake()', cls: '' },
+      ], init: initHandshake
+    },
+    stopwait: {
+      btns: [
+        { l: 'Send Packet', fn: 'swSend(false)', cls: 'btn-blue' },
+        { l: 'Simulate Loss', fn: 'swSend(true)', cls: 'btn-red' },
+        { l: 'Reset', fn: 'initStopWait()', cls: '' },
+      ], init: initStopWait
+    },
+    gobackn: {
+      btns: [
+        { l: 'Send Window', fn: 'gbnSendWindow()', cls: 'btn-blue' },
+        { l: 'Win +1', fn: 'gbnWinSize=Math.min(8,gbnWinSize+1);initGBN()', cls: '' },
+        { l: 'Win −1', fn: 'gbnWinSize=Math.max(1,gbnWinSize-1);initGBN()', cls: '' },
+        { l: 'Reset', fn: 'initGBN()', cls: '' },
+      ], init: initGBN
+    },
+  };
+
+  const cfg = configs[m];
+  document.getElementById('ctrlBar').innerHTML =
+    cfg.btns.map(b => `<button class="btn ${b.cls}" onclick="${b.fn}">${b.l}</button>`).join('') +
+    `<div class="speed-row">Speed <input type="range" min="0.5" max="3" step="0.5" value="${speed}" oninput="speed=+this.value;this.nextElementSibling.textContent=speed+'×'"><span>${speed}×</span></div>`;
+  cfg.init();
+}
+
+// Init
+window.addEventListener('resize', () => {
+  if (mode === 'handshake') drawHandshake(0, null);
+  else if (mode === 'stopwait') drawStopWait();
+  else if (mode === 'gobackn') drawGBN();
+});
+
+const firstBtn = document.querySelector('.mode-tab.active');
+switchMode('handshake', firstBtn);
+</script>
+</body>
+</html>
